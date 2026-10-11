@@ -1,5 +1,7 @@
 package com.shilapi.xcertplay.capabilities
 
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.usb.UsbManager
@@ -27,7 +29,10 @@ data class TransportCapabilities(
     val supportsUsbHost: Boolean = true,
     val supportsWifiDirect: Boolean = true,
     val supportsLocalHotspot: Boolean = true,
-    val supportsBluetoothAudio: Boolean = true
+    val supportsBluetoothAudio: Boolean = true,
+    val isBluetoothEnabled: Boolean = false,
+    val isUsbHostVerified: Boolean = true,
+    val isWifiDirectVerified: Boolean = true
 )
 
 /** Comprehensive vendor-neutral capability profile for an Android head unit. */
@@ -71,13 +76,40 @@ object HeadUnitCapabilityDetector {
             else -> HeadUnitVendor.GENERIC_ANDROID
         }
 
-        val hasUsbHost = packageManager.hasSystemFeature(PackageManager.FEATURE_USB_HOST) ||
-            (context.getSystemService(Context.USB_SERVICE) as? UsbManager != null)
+        // Hardware feature checks with system feature guard & service availability check
+        val hasUsbFeature = packageManager.hasSystemFeature(PackageManager.FEATURE_USB_HOST)
+        val usbManager = try { context.getSystemService(Context.USB_SERVICE) as? UsbManager } catch (_: Exception) { null }
+        val hasUsbHost = hasUsbFeature || (usbManager != null)
 
-        val hasWifiP2p = packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_DIRECT) ||
-            (context.getSystemService(Context.WIFI_P2P_SERVICE) as? WifiP2pManager != null)
+        val hasWifiP2pFeature = packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_DIRECT)
+        val wifiP2pManager = try { context.getSystemService(Context.WIFI_P2P_SERVICE) as? WifiP2pManager } catch (_: Exception) { null }
+        val hasWifiP2p = hasWifiP2pFeature || (wifiP2pManager != null)
 
-        val hasTouchscreen = packageManager.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)
+        val hasTouchscreen = packageManager.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN) ||
+            packageManager.hasSystemFeature(PackageManager.FEATURE_FAKETOUCH)
+
+        val hasBluetoothFeature = packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH)
+        var isBtEnabled = false
+        if (hasBluetoothFeature) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    val btManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+                    isBtEnabled = btManager?.adapter?.isEnabled == true
+                } else {
+                    @Suppress("DEPRECATION")
+                    val adapter = BluetoothAdapter.getDefaultAdapter()
+                    isBtEnabled = adapter?.isEnabled == true
+                }
+            } catch (_: Exception) {
+                isBtEnabled = false
+            }
+        }
+
+        val supportsLocalHotspot = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+
+        val supportsMultiWindow = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N &&
+            (!isAutomotive || packageManager.hasSystemFeature(PackageManager.FEATURE_FREEFORM_WINDOW_MANAGEMENT) ||
+             packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE))
 
         val modelName = when (vendor) {
             HeadUnitVendor.BYD -> "BYD DiLink ($product)"
@@ -93,13 +125,16 @@ object HeadUnitCapabilityDetector {
             display = DisplayCapabilities(
                 supportsHardwareDecoding = true,
                 isTouchscreenAvailable = hasTouchscreen,
-                supportsMultiWindow = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+                supportsMultiWindow = supportsMultiWindow
             ),
             transport = TransportCapabilities(
                 supportsUsbHost = hasUsbHost,
                 supportsWifiDirect = hasWifiP2p,
-                supportsLocalHotspot = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O,
-                supportsBluetoothAudio = packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH)
+                supportsLocalHotspot = supportsLocalHotspot,
+                supportsBluetoothAudio = hasBluetoothFeature,
+                isBluetoothEnabled = isBtEnabled,
+                isUsbHostVerified = hasUsbFeature && usbManager != null,
+                isWifiDirectVerified = hasWifiP2pFeature && wifiP2pManager != null
             ),
             supportsSteeringWheelKeys = vendor == HeadUnitVendor.GEELY_LYNK || vendor == HeadUnitVendor.BYD,
             supportsVehicleNavigationIntegration = vendor == HeadUnitVendor.BYD

@@ -24,6 +24,12 @@ This is **not an Apple-certified product**. The APK bundles an experimental acce
 
 Earlier releases were tested on the development DiLink5.1 car: live windshield guidance and street names work, Car hotspot now starts CarPlay, and Wi-Fi Direct performance is substantially improved. Audio underrun recovery is improved in 0.2.15; remaining cutouts need current diagnostic reports. The 0.2.16 software Opus microphone fallback was accepted on a BOS Mini A1 head unit (Android 9) with an iPhone 12 on iOS 27. The floating-map test build was installed on the development DiLink 5.1 car; feedback led to the pinch corrections in 0.2.9. Earlier wheel-speed and video contributions were tested on a BYD Tang with DiLink 5.0 and an iPhone 15 Pro on iOS 27; wheel-speed dead reckoning in tunnels remains unverified. Broader head-unit and iOS compatibility is not guaranteed. The HUD firmware scope and cleanup limits are documented in [BYD navigation](docs/BYD_NAVIGATION.md).
 
+## Minimum Android SDK & Legacy Android Compatibility
+
+- **Verified Minimum Android API**: Android 7.1 (API 25) for `:mobile`, `:common`, and `:shared`; API 28 for `:automotive`; API 30 for launcher map samples (`:home` and `:maphost`).
+- **Android 4.0–4.4 (API 14–19)**: Infeasible on current codebase due to Jetpack Compose BOM, AndroidX Media3, WorkManager, BouncyCastle, and AGP 9.3 toolchain requirements. Detailed dependency and API feasibility audit is documented in [Legacy Android Audit](docs/LEGACY_ANDROID_AUDIT.md).
+- **Runtime Capability Detection**: Uses vendor-neutral capability detection (`HeadUnitCapabilities` and `PlatformCompat`) with safe platform guards for USB host, Wi-Fi Direct, local hotspot, and Bluetooth audio.
+
 ## What’s new in 0.2.18
 
 - Wired CarPlay no longer drops every few minutes when a USB read finishes just as DiPlay stops waiting for it, and it now starts on Android 7.1 head units, on head units whose USB audio driver held the iPhone, and without a VPN dialog when network ADB is approved.
@@ -45,6 +51,7 @@ BYD DiLink 4.0 / Android 10 clean-install validation result.
 
 - [Install and connect](docs/INSTALL.md)
 - [Compatibility and troubleshooting](docs/COMPATIBILITY.md)
+- [Legacy Android audit & feasibility](docs/LEGACY_ANDROID_AUDIT.md)
 - [Smooth wireless CarPlay](docs/SMOOTH_WIRELESS.md)
 - [Privacy and diagnostic reports](docs/PRIVACY.md)
 - [Build from source](docs/BUILD.md) — select `mobile` for the main DiPlay app; `maphost` is a map sample.
