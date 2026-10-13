@@ -106,8 +106,7 @@ object BydBluetoothSuspend {
     }
 
     private fun radioEnabled(context: Context): Boolean? = runCatching {
-        val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter
-            ?: BluetoothAdapter.getDefaultAdapter() ?: return@runCatching null
+        val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter ?: return@runCatching null
         when (adapter.state) {
             BluetoothAdapter.STATE_ON -> true
             BluetoothAdapter.STATE_OFF -> false

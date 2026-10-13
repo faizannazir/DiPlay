@@ -58,14 +58,14 @@ class WidgetBoard(private val activity: Activity, private val column: LinearLayo
             compareBy({ appLabel(it) }, { it.loadLabel(activity.packageManager) }),
         )
         if (providers.isEmpty()) {
-            Toast.makeText(activity, R.string.home_no_widgets, Toast.LENGTH_LONG).show()
+            Toast.makeText(activity, "No widgets installed", Toast.LENGTH_LONG).show()
             return
         }
         val labels = providers.map { "${appLabel(it)} · ${it.loadLabel(activity.packageManager)}" }.toTypedArray()
         AlertDialog.Builder(activity)
-            .setTitle(R.string.home_add_widget)
+            .setTitle("Add a widget")
             .setItems(labels) { _, index -> add(providers[index]) }
-            .setNegativeButton(android.R.string.cancel, null)
+            .setNegativeButton("Cancel", null)
             .show()
     }
 
@@ -87,11 +87,12 @@ class WidgetBoard(private val activity: Activity, private val column: LinearLayo
             pendingId = null
             host.deleteAppWidgetId(id)
             AlertDialog.Builder(activity)
-                .setTitle(R.string.home_allow_widgets)
+                .setTitle("Allow widgets")
                 .setMessage(
-                    activity.getString(R.string.home_allow_widgets_description, activity.packageName),
+                    "This head unit has no screen to allow widgets. Allow DiPlay Home once over ADB:\n\n" +
+                        "adb shell appwidget grantbind --package ${activity.packageName} --user 0",
                 )
-                .setPositiveButton(android.R.string.ok, null)
+                .setPositiveButton("OK", null)
                 .show()
         }
     }
@@ -139,7 +140,6 @@ class WidgetBoard(private val activity: Activity, private val column: LinearLayo
         val widget = host.createView(activity.applicationContext, id, info)
         val remove = TextView(activity).apply {
             text = "✕"
-            contentDescription = activity.getString(R.string.home_remove_widget)
             setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
             gravity = Gravity.CENTER

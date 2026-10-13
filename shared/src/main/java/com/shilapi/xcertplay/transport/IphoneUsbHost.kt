@@ -74,11 +74,7 @@ class IphoneUsbHost(
 
     sealed class PermissionRequest {
         data class AlreadyGranted(val device: UsbDevice) : PermissionRequest()
-        data class Requested(
-            val device: UsbDevice,
-            val afterMissingUiAdbFailure: Boolean = false,
-        ) : PermissionRequest()
-        data class AdbRequired(val device: UsbDevice) : PermissionRequest()
+        data class Requested(val device: UsbDevice) : PermissionRequest()
     }
 
     sealed class PermissionResult {
@@ -102,24 +98,12 @@ class IphoneUsbHost(
         usbManager.deviceList.values.filter { matcher.matches(it.vendorId, it.productId) }
 
     @Throws(IphoneUsbException::class)
-    fun requestPermission(device: UsbDevice, allowAdbFallback: Boolean = true): PermissionRequest {
+    fun requestPermission(device: UsbDevice): PermissionRequest {
         requireConfiguredDevice(device)
         if (usbManager.hasPermission(device)) return PermissionRequest.AlreadyGranted(device)
 
-        val ui = UsbPermissionActivityProbe.inspect(appContext)
-        if (ui.state != UsbPermissionActivityProbe.State.UNKNOWN) {
-            runCatching { onDiagnostic(ui.diagnostic()) }
-        }
-        if (ui.state == UsbPermissionActivityProbe.State.UNAVAILABLE) {
-            if (allowAdbFallback && IphoneUsbAdbGrant.supported()) {
-                return PermissionRequest.AdbRequired(device)
-            }
-        }
         usbManager.requestPermission(device, permissionPendingIntent())
-        return PermissionRequest.Requested(
-            device,
-            afterMissingUiAdbFailure = ui.state == UsbPermissionActivityProbe.State.UNAVAILABLE,
-        )
+        return PermissionRequest.Requested(device)
     }
 
     /** Returns null for unrelated broadcasts, malformed results, or non-configured devices. */

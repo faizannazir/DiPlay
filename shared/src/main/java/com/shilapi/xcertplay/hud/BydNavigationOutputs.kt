@@ -162,8 +162,6 @@ object BydNavigationOutputs {
         if (!preserveTurnOverlay) {
             synchronized(overlayLock) { overlayRoute.clear() }
             refreshTurnOverlay()
-        } else {
-            synchronized(overlayLock) { overlayRoute.holdAcrossDrop() }
         }
     }
 }

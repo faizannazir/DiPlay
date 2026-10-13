@@ -56,7 +56,6 @@ class Iap2WiredControlClient(
         onProgress("iap2 power/subscriptions sent availableCurrentMa=$availableCurrentMilliAmps")
 
         var forwardedFrames = 0
-        val rxLog = Iap2RxLog()
         var carPlayStartSessions = 0
         val location = Iap2LocationReporter(locationProvider, onProgress)
         val vehicleStatus = Iap2VehicleStatusReporter(vehicleStatusProvider, onProgress)
@@ -111,7 +110,7 @@ class Iap2WiredControlClient(
                     }
 
                     else -> {
-                        rxLog.line(incoming.messageId)?.let(onProgress)
+                        onProgress("iap2 rx=0x${incoming.messageId.toString(16).padStart(4, '0')}")
                         onIncoming(incoming)
                         forwardedFrames++
                     }
