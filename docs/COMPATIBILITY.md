@@ -2,15 +2,13 @@
 
 This public preview is an independent receiver, not an Apple-certified CarPlay accessory. The experimental bundled accessory identity is extractable and its future acceptance is not guaranteed.
 
-For a comprehensive dependency audit, API level feasibility assessment (including pre-API 21 / Android 4.x blockers), legacy UI architecture design, and iOS protocol compatibility matrix, see [Legacy Android Audit](LEGACY_ANDROID_AUDIT.md).
-
 | Area | Current scope |
 | --- | --- |
 | Head unit | Android 7.1+ (API 25+) APK; Android 7.1–8.1 support is not yet confirmed on a vehicle, and Android 7.x has no local-only hotspot (use the car hotspot, Wi-Fi Direct or Existing Wi-Fi); Android 7.0 and older are unsupported; Wi-Fi Direct has a firmware-dependent legacy Android 7.1–9 path with unverified requested frequency, and modern verified frequency on Android 10+ |
 | Phone | Standard, non-jailbroken iPhone with CarPlay enabled; device/iOS compatibility varies |
 | Physical evidence | Previous private builds: wired and wireless picture, touch and audio confirmed on the development car with iPhone XS / iOS 18.7.10 |
 | Other cars | Mixed community reports across DiLink generations; not a certified model support list |
-| 0.2.18 evidence | Automated source/build validation and attributed contributor tests; no new complete-release vehicle test or universal model support is claimed. Earlier DiLink5.1 HUD/hotspot results remain historical evidence. |
+| 0.2.14 evidence | Automated source/build validation and attributed contributor tests; no new complete-release vehicle test or universal model support is claimed. Earlier DiLink5.1 HUD/hotspot results remain historical evidence. |
 | Wi-Fi | Auto uses eligible saved/aligned channels; beside a 5 GHz station, explicit 2.4 GHz precedes other 5 GHz/unpinned default fallbacks. Manual channels stay explicit; no band/performance guarantee. |
 | Video | Default H.264 / 30 fps; 60 fps and HEVC increase device-specific demands |
 
@@ -56,46 +54,12 @@ The specifically observed 1280×480 DiLink 3 projection surface is now recognize
 - Some iOS/head-unit combinations do not visibly apply icon and text size. Reconnection is implemented; that does not guarantee the iPhone chooses the requested layout.
 - A radio that supports joining a 5 GHz network may still reject a 5 GHz Wi-Fi Direct group. The capability flag is diagnostic, not proof of group-owner support.
 - Automatic startup depends on the car's firmware and startup permissions.
+- Wireless CarPlay cannot start on a head unit that keeps calls and music on the maker's own Bluetooth module, because Android's Bluetooth there accepts connections that reach no phone. A common sign: the iPhone is paired in the maker's own Bluetooth or Phone app, not in Android's Bluetooth settings. Since 0.2.18 DiPlay tests for this and stops with the cause instead of retrying ([#590](https://github.com/shihabal3amri/DiPlay/pull/590)). Confirmed on one Allwinner T8 with TopWay firmware; [#330](https://github.com/shihabal3amri/DiPlay/issues/330) and [#354](https://github.com/shihabal3amri/DiPlay/issues/354) show the same symptom. USB is the only route left to try on such a unit.
 - USB requires a data port and correct host/device-role behavior.
 - Calls, Siri, background reconnection, long journeys and future iOS releases need broader testing.
 
-For a current report, reproduce the problem on **0.2.18**, then open **Settings → Diagnostics → Save diagnostic report**. Android 10+ normally saves to **Downloads/DiPlay**; Android 9 uses a document picker. The confirmation identifies fallback storage and offers **View report** and **Share**. Attach the reviewed `.txt` to a matching [existing issue](https://github.com/shihabal3amri/DiPlay/issues), or [create an issue](https://github.com/shihabal3amri/DiPlay/issues/new/choose). Include car/head-unit, Android/DiLink/firmware, iPhone/iOS, connection mode, steps and failure time. Nothing uploads automatically.
+For a current report, reproduce the problem on **0.2.14**, then open **Settings → Diagnostics → Save diagnostic report**. Android 10+ normally saves to **Downloads/DiPlay**; Android 9 uses a document picker. The confirmation identifies fallback storage and offers **View report** and **Share**. Attach the reviewed `.txt` to a matching [existing issue](https://github.com/shihabal3amri/DiPlay/issues), or [create an issue](https://github.com/shihabal3amri/DiPlay/issues/new/choose). Include car/head-unit, Android/DiLink/firmware, iPhone/iOS, connection mode, steps and failure time. Nothing uploads automatically.
 
 Reports record requested frequencies, station association state, fallback failures and remembered-configuration events. Android 10+ can verify the actual group frequency; Android 9 reports its accepted channel request as unverified and system-default as channel 0. Wi-Fi credentials and protocol payloads are excluded. A successful hotspot is not itself a successful CarPlay session.
 
 Android references: [SupplicantState](https://developer.android.com/reference/android/net/wifi/SupplicantState), [explicit P2P operating frequency](https://developer.android.com/reference/android/net/wifi/p2p/WifiP2pConfig.Builder#setGroupOperatingFrequency(int)).
-
-## Vendor-Neutral Compatibility Matrix & Capability Detection
-
-DiPlay utilizes a capability-driven architecture (`HeadUnitCapabilities` and `PlatformCompat`) rather than relying exclusively on manufacturer branding. Unknown Android displays receive safe generic defaults.
-
-| Vendor / Platform | Device Capability Detection | USB Host | Wi-Fi Direct | Hotspot | Bluetooth Audio | OEM HUD / Steering Controls | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| BYD DiLink 3.0 / 4.0 / 5.0 / 5.1 | System version, controller version, fingerprint | Supported | Supported | Supported | Supported | Supported (DiLink HUD & Cluster) | Confirmed |
-| Geely / Lynk & Co (`geely_fx11`) | Custom input service (`com.geely.inputservice`) | Supported | Supported | Supported | Supported | Supported (Vendor steering keys) | Confirmed |
-| Android Automotive OS (AAOS) | `FEATURE_AUTOMOTIVE` system feature | Supported | Supported | Supported | Supported | Standard Android APIs | Generic Supported |
-| Generic Android Aftermarket Head Units | Safe generic fallback (`HeadUnitCapabilities`) | Supported (if hardware host) | Supported (if P2P hardware) | Supported (Android 8.0+) | Supported | Standard KEYCODE_MEDIA events | Safe Generic Fallback |
-
----
-
-## Feasibility Assessment: CarPlay & Android Auto Receivers
-
-### 1. Apple CarPlay Receiver Feasibility
-- **Integration Options:** Wired (USB NCM / Accessory / Accessory Server) and Wireless (Wi-Fi Direct / Local Hotspot / mDNS AirPlay discovery).
-- **Authentication & Security:** Requires MFi authentication accessory handshake. Source tree builds are clean and credential-free; standalone release test packages use runtime identity assets supplied at build time via `DIPLAY_AUTH_ASSETS_DIR`.
-- **Supported Phones:** iPhones running iOS 12 through iOS 18+. Detailed iOS 15–18+ protocol breakdown (iAP2, RTSP/HTTP, AAC-LC, LPCM, Opus, H.264, HEVC, USB NCM, USBMUX, Wi-Fi Direct) is available in [Legacy Android Audit](LEGACY_ANDROID_AUDIT.md).
-- **Feasibility:** Fully feasible and active in DiPlay.
-
-### 2. Android Auto Receiver Feasibility
-- **Integration Options:** Wireless (Wi-Fi P2P / Hotspot + Bluetooth A2DP/RFCOMM connection handshake) and Wired (USB Accessory Mode). Protocol uses Google's Wireless Android Auto projection protocol over SSL/TLS socket connections.
-- **Protocol & Certification Requirements:** Official Android Auto head-unit integration requires Google Automotive Services (GAS) certification and proprietary protobuf handshake specifications.
-- **Licensing & Redistribution Constraints:** Open-source Android Auto receiver implementations (e.g. OpenAuto) utilize reverse-engineered protobuf schemas. Official certificates cannot be distributed without authorization.
-- **Feasibility:** Technically feasible via an independent open protocol adapter module. Recommended as a distinct standalone integration path to prevent polluting CarPlay session logic.
-
----
-
-## Security & Privacy Boundary Verification
-
-- **Zero Hardcoded Secrets:** Source tree and CI assets contain no hardcoded private keys or unauthorized production MFi certificates.
-- **Privacy-Safe Diagnostics:** `DiagnosticRedactor` filters out MAC addresses, IP addresses, credentials, passwords, tokens, and named identifiers before exporting diagnostic reports.
-- **Permission Minimization:** Requests minimum required permissions (USB host, Wi-Fi, Bluetooth) and respects OS-level user grants.

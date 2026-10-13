@@ -36,12 +36,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    testOptions {
-        unitTests.all {
-            systemProperty 'robolectric.dependency.repo.id', 'aliyun'
-            systemProperty 'robolectric.dependency.repo.url', 'https://maven.aliyun.com/repository/public'
-        }
-    }
 }
 dependencies {
     implementation libs.androidx.app
@@ -49,10 +43,4 @@ dependencies {
     implementation libs.jmdns
     testImplementation libs.junit
     testImplementation 'org.robolectric:robolectric:4.17'
-    testImplementation 'org.mockito:mockito-core:5.20.0'
-}
-
-tasks.withType(Test).configureEach {
-    systemProperty 'robolectric.dependency.repo.id', 'aliyun'
-    systemProperty 'robolectric.dependency.repo.url', 'https://maven.aliyun.com/repository/public'
 }

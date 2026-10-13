@@ -24,10 +24,6 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
-        unitTests.all {
-            it.systemProperty("robolectric.dependency.repo.id", "aliyun")
-            it.systemProperty("robolectric.dependency.repo.url", "https://maven.aliyun.com/repository/public")
-        }
     }
 }
 
@@ -40,6 +36,4 @@ dependencies {
 tasks.withType<Test>().configureEach {
     // Robolectric's API 36 shared-memory implementation needs this JDK interface.
     jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
-    systemProperty("robolectric.dependency.repo.id", "aliyun")
-    systemProperty("robolectric.dependency.repo.url", "https://maven.aliyun.com/repository/public")
 }
