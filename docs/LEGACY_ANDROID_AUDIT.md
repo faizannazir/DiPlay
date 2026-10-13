@@ -83,8 +83,7 @@ To support legacy head units without rewriting business logic:
 
 ```
                       +----------------------------------+
-                      |     ConnectionStateMachine       |
-                      |  & CarPlay Orchestration Logic   |
+                      |     CarPlay Orchestration Logic  |
                       +----------------------------------+
                                        |
                                        v
@@ -107,8 +106,8 @@ To support legacy head units without rewriting business logic:
 +--------------------------+                       +--------------------------+
 ```
 
-1. **Shared State & Business Logic**: All connection state, AirPlay socket handling, audio/video pipelines, and HUD integrations remain in `:shared` and `:common` state holders (`ConnectionStateMachine`, `HeadUnitCapabilities`, `PlatformCompat`).
-2. **UI Abstraction Interface**: Introduce a `UiRenderer` interface exposing `renderState(state: ConnectionState)` and `onAction(action: UiAction)`.
+1. **Shared State & Business Logic**: All connection state, AirPlay socket handling, audio/video pipelines, and HUD integrations remain in `:shared` and `:common` state holders (`HeadUnitCapabilities`, `PlatformCompat`).
+2. **UI Abstraction Interface**: Introduce a `UiRenderer` interface exposing state rendering methods.
 3. **Dual View Holders**: Compose implementation for modern devices (API 25+); traditional View/XML layout implementation for legacy devices.
 
 ---
