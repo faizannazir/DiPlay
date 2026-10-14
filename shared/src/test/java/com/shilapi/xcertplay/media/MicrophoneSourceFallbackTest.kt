@@ -110,6 +110,18 @@ class MicrophoneSourceFallbackTest {
         assertEquals(MediaRecorder.AudioSource.VOICE_RECOGNITION, requireNotNull(captured.get()).audioSource)
     }
 
+    @Test fun appAudioMicCreationFailureFallsBackToVoiceCommunication() {
+        RecorderBuilder.rejectSources = setOf(MediaRecorder.AudioSource.MIC)
+        val uplink = MicrophoneUplink(config("default"), onDiagnostic = diagnostics::add)
+
+        assertTrue(uplink.start())
+        assertTrue(diagnostics.joinToString(" "), captureStarted.await(5, TimeUnit.SECONDS))
+        val recorder = requireNotNull(captured.get())
+        assertEquals(listOf(MediaRecorder.AudioSource.MIC, MediaRecorder.AudioSource.VOICE_COMMUNICATION), RecorderBuilder.attempts)
+        assertEquals(MediaRecorder.AudioSource.VOICE_COMMUNICATION, recorder.audioSource)
+        uplink.close()
+    }
+
     @Test fun telephonyCreationFailureDoesNotRetryOrLeaveTheCallModeActive() {
         RecorderBuilder.rejectSources = setOf(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
         sink.onMicrophoneStarted(AudioStreamId(101, "telephony"), config("telephony"))

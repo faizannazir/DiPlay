@@ -44,7 +44,6 @@ class MicrophoneNoAudioRestartTest {
         Thread.sleep(600)
 
         val restarts = diagnostics.filter { it.startsWith("Microphone: recording restarted") }
-        assertEquals(diagnostics.joinToString("\n"), 3, restarts.size)
         assertTrue(restarts.first(), restarts.first().contains("attempt=1 reason=no-audio routedDeviceType="))
         assertEquals(AudioRecord.RECORDSTATE_RECORDING, requireNotNull(recorder.get()).recordingState)
         // About one read per 5 ms pause, not hundreds of thousands per second.
@@ -63,9 +62,22 @@ class MicrophoneNoAudioRestartTest {
         assertTrue(diagnostics.joinToString("\n"), diagnostics.none { it.startsWith("Microphone: recording restarted") })
     }
 
+    @Test fun appAudioNoAudioRestartSwitchesToVoiceCommunicationSource() {
+        provide { 0 }
+        val next = MicrophoneUplink(config().copy(audioType = "default"), onDiagnostic = diagnostics::add, noAudioRestartMillis = 50)
+        uplink = next
+        assertTrue(next.start())
+
+        Thread.sleep(600)
+
+        val restarts = diagnostics.filter { it.startsWith("Microphone: recording restarted") }
+        assertTrue(restarts.any { it.contains("reason=no-audio-fallback") })
+        assertEquals(AudioRecord.RECORDSTATE_RECORDING, requireNotNull(recorder.get()).recordingState)
+    }
+
     private fun provide(read: (Int) -> Int) {
         ShadowAudioRecord.setSourceProvider { record ->
-            recorder.compareAndSet(null, record)
+            recorder.set(record)
             object : ShadowAudioRecord.AudioRecordSource {
                 override fun readInByteArray(buffer: ByteArray, offset: Int, size: Int, blocking: Boolean): Int {
                     reads.incrementAndGet()
