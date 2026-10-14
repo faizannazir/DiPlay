@@ -9,6 +9,7 @@ import java.io.Closeable
 import java.math.BigInteger
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import java.net.Inet6Address
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.ServerSocket
@@ -107,7 +108,10 @@ class AirPlaySession(
     val localAddress: InetAddress? = socket.localAddress
     private val peerAddress: InetAddress? = socket.inetAddress
     internal val remoteAddress: InetAddress?
-        get() = (socket.remoteSocketAddress as? InetSocketAddress)?.address
+        get() = ScopedAddressCompat.scopeRemoteAddress(
+            (socket.remoteSocketAddress as? InetSocketAddress)?.address,
+            socket.localAddress,
+        )
     val controllerId: String? get() = pairVerify.verifiedControllerId
     val sharedSecret: ByteArray? get() = pairVerify.shared?.copyOf()
     val videoInCar: Boolean get() = config.videoInCar
@@ -1008,3 +1012,19 @@ private fun asMap(value: Any?): Map<String, Any?>? {
 private fun string(value: Any?): String = value as? String ?: ""
 
 private fun long(value: Any?): Long? = (value as? Number)?.toLong()
+
+
+internal object ScopedAddressCompat {
+    fun scopeRemoteAddress(remote: InetAddress?, local: InetAddress?): InetAddress? {
+        if (remote !is Inet6Address || !remote.isLinkLocalAddress || remote.scopeId != 0) {
+            return remote
+        }
+        val localScopeId = (local as? Inet6Address)?.scopeId ?: 0
+        if (localScopeId != 0) {
+            return runCatching {
+                Inet6Address.getByAddress(null, remote.address, localScopeId)
+            }.getOrDefault(remote)
+        }
+        return remote
+    }
+}

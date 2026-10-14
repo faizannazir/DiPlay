@@ -54,6 +54,7 @@ internal class MicrophoneUplink(
     @Volatile private var opusEncoder: MicrophoneOpusEncoder? = null
     @Volatile private var effects: List<AudioEffect> = emptyList()
     @Volatile private var echoCanceller: CallEchoCanceller? = null
+    @Volatile private var activeSource: Int = MediaRecorder.AudioSource.MIC
     private var thread: Thread? = null
 
     fun start(): Boolean {
@@ -106,10 +107,11 @@ internal class MicrophoneUplink(
             Log.i(TAG, message)
             runCatching { onDiagnostic(message) }
         }
+        activeSource = source
         val bufferSize = maxOf(minBuffer * 2, config.frameBytes * 4)
         // Some head units throw on VOICE_RECOGNITION at build(); VOICE_COMMUNICATION works there.
         val nextRecorder = createRecorder(source, channelMask, bufferSize)
-            ?: if (source == MediaRecorder.AudioSource.VOICE_RECOGNITION) {
+            ?: if (source == MediaRecorder.AudioSource.VOICE_RECOGNITION || source == MediaRecorder.AudioSource.MIC) {
                 stats.useVoiceCommunicationSource()
                 createRecorder(MediaRecorder.AudioSource.VOICE_COMMUNICATION, channelMask, bufferSize)
             } else {
@@ -270,11 +272,12 @@ internal class MicrophoneUplink(
         }
     }
 
-    private fun capture(recorder: AudioRecord, socket: DatagramSocket) {
+    private fun capture(initialRecorder: AudioRecord, activeSocket: DatagramSocket) {
+        var activeRec = initialRecorder
         val frame = ByteArray(config.frameBytes)
         val readBuffer = ByteArray(maxOf(frame.size, MIN_READ_BYTES))
         val counters = MicrophoneCounters()
-        val routeInfo = { routeType(recorder) }
+        val routeInfo = { routeType(activeRec) }
         var canceller = echoCanceller
         val clock = canceller?.let { CaptureClock(config.sampleRate) }
         val reference = canceller?.let { ShortArray(it.frameSamples) }
@@ -285,9 +288,9 @@ internal class MicrophoneUplink(
         try {
             while (running.get()) {
                 stats.reading()
-                val count = recorder.read(readBuffer, 0, readBuffer.size, AudioRecord.READ_BLOCKING)
+                val count = activeRec.read(readBuffer, 0, readBuffer.size, AudioRecord.READ_BLOCKING)
                 stats.read(count)
-                if (count > 0) clock?.read(recorder, count / 2)
+                if (count > 0) clock?.read(activeRec, count / 2)
                 if (count < 0) {
                     if (running.get()) {
                         Log.e(TAG, "microphone read failed code=$count")
@@ -297,10 +300,10 @@ internal class MicrophoneUplink(
                     // ERROR_INVALID_OPERATION, and capture used to end there for the whole call
                     // (#647). Restart recording a few times before giving up.
                     if (running.get() && count != AudioRecord.ERROR_DEAD_OBJECT &&
-                        readRestarts < MAX_READ_RESTARTS && restartRecording(recorder)
+                        readRestarts < MAX_READ_RESTARTS && restartRecording(activeRec)
                     ) {
                         readRestarts++
-                        stats.restarted(readRestarts, "read-error", routeType(recorder))
+                        stats.restarted(readRestarts, "read-error", routeType(activeRec))
                         continue
                     }
                     return
@@ -316,10 +319,35 @@ internal class MicrophoneUplink(
                     ) {
                         noAudioRestarts++
                         lastAudioNs = now
-                        if (restartRecording(recorder)) {
-                            stats.restarted(noAudioRestarts, "no-audio", routeType(recorder))
-                        } else {
-                            stats.failure(MicrophoneFailureStage.RECORDING, code = recorder.recordingState)
+                        var switched = false
+                        if (activeSource == MediaRecorder.AudioSource.MIC && config.audioType != "telephony") {
+                            stats.useVoiceCommunicationSource()
+                            val mask = channelMask()
+                            val fallbackRecorder = createRecorder(
+                                MediaRecorder.AudioSource.VOICE_COMMUNICATION,
+                                mask,
+                                bufferSize(mask),
+                            )
+                            if (fallbackRecorder != null) {
+                                runCatching { activeRec.stop() }
+                                runCatching { activeRec.release() }
+                                if (restartRecording(fallbackRecorder)) {
+                                    recorder = fallbackRecorder
+                                    activeRec = fallbackRecorder
+                                    activeSource = MediaRecorder.AudioSource.VOICE_COMMUNICATION
+                                    switched = true
+                                    stats.restarted(noAudioRestarts, "no-audio-fallback", routeType(fallbackRecorder))
+                                } else {
+                                    fallbackRecorder.release()
+                                }
+                            }
+                        }
+                        if (!switched) {
+                            if (restartRecording(activeRec)) {
+                                stats.restarted(noAudioRestarts, "no-audio", routeType(activeRec))
+                            } else {
+                                stats.failure(MicrophoneFailureStage.RECORDING, code = activeRec.recordingState)
+                            }
                         }
                     } else {
                         Thread.sleep(EMPTY_READ_PAUSE_MILLIS)
@@ -352,7 +380,7 @@ internal class MicrophoneUplink(
                             }
                         }
                         stats.level(frame)
-                        sendFrame(socket, counters, frame)
+                        sendFrame(activeSocket, counters, frame)
                         filled = 0
                     }
                 }
@@ -445,6 +473,21 @@ internal class MicrophoneUplink(
             if (AcousticEchoCanceler.isAvailable()) AcousticEchoCanceler.create(recorder!!.audioSessionId) else null
         }?.let { effects = effects + it }
         Log.i(TAG, "microphone native echo processing stopped; using platform effects")
+    }
+
+    private fun channelMask(): Int = if (config.channels >= 2) {
+        AndroidAudioFormat.CHANNEL_IN_STEREO
+    } else {
+        AndroidAudioFormat.CHANNEL_IN_MONO
+    }
+
+    private fun bufferSize(mask: Int): Int {
+        val minBuffer = AudioRecord.getMinBufferSize(
+            config.sampleRate,
+            mask,
+            AndroidAudioFormat.ENCODING_PCM_16BIT,
+        )
+        return maxOf(minBuffer * 2, config.frameBytes * 4)
     }
 
     override fun close() {
