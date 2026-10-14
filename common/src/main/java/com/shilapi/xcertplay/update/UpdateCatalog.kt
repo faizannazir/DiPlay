@@ -34,12 +34,20 @@ internal object UpdateCatalog {
                 }
                 if (name.equals(CHECKSUMS_FILE, ignoreCase = true) && url.isNotBlank()) checksumsUrl = url
             }
-            if (apkUrl.isEmpty() || checksumsUrl.isEmpty()) continue
+            if (!isValidHttpsUrl(apkUrl) || !isValidHttpsUrl(checksumsUrl)) continue
             val tagName = release.optString("tag_name")
             if (tagName.isBlank()) continue
             val releaseNotes = release.optString("body")
             return UpdateRelease(tagName, apkName, apkUrl, checksumsUrl, releaseNotes)
         }
         return null
+    }
+
+    internal fun isValidHttpsUrl(value: String): Boolean {
+        if (value.isBlank()) return false
+        return runCatching {
+            val parsed = java.net.URL(value)
+            parsed.protocol.equals("https", ignoreCase = true) && !parsed.host.isNullOrBlank()
+        }.getOrDefault(false)
     }
 }
