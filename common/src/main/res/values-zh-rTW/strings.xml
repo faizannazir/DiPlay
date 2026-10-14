@@ -762,6 +762,8 @@
     <string name="update_latest_version">最新可用版本：%1$s</string>
     <string name="update_release_notes">更新說明：</string>
     <string name="update_no_release_notes">暫無更新說明。</string>
+    <string name="update_release_notes_more">顯示完整更新說明</string>
+    <string name="update_release_notes_less">收起</string>
     <string name="update_no_internet">無網路連線。請檢查網路後重試。</string>
     <string name="backup_title">備份設定</string>
     <string name="backup_open">在手機上備份或還原</string>

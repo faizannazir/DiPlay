@@ -698,6 +698,8 @@
     <string name="update_latest_version">Última versión disponible: %1$s</string>
     <string name="update_release_notes">Notas de la versión:</string>
     <string name="update_no_release_notes">No hay notas de la versión disponibles.</string>
+    <string name="update_release_notes_more">Mostrar notas completas</string>
+    <string name="update_release_notes_less">Mostrar menos</string>
     <string name="update_no_internet">Sin conexión a Internet. Comprueba tu red e inténtalo de nuevo.</string>
     <string name="backup_title">Copia de seguridad de ajustes</string>
     <string name="backup_open">Copiar o restaurar en un teléfono</string>

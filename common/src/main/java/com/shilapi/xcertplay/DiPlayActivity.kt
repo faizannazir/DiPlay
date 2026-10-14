@@ -244,6 +244,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     @Volatile private var updateGeneration = 0
     @Volatile private var updateProgress: Int? = null
     private var updateRelease: UpdateRelease? = null
+    private var releaseNotesExpanded = false
     private var updateFile: File? = null
     private var updateMessage: String? = null
     private var carButtonCard: LinearLayout? = null
@@ -2552,7 +2553,10 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     private fun backupPageHtml(): ByteArray = assets.open("settings-backup.html").use { it.readBytes() }
 
     private fun updateRow(): View {
-        if (updateRelease == null && availableUpdate != null && updateStage == UpdateStage.IDLE) {
+        if (updateStage == UpdateStage.IDLE && updateMessage == getString(R.string.update_up_to_date)) {
+            updateRelease = null
+            availableUpdate = null
+        } else if (updateRelease == null && availableUpdate != null && updateStage == UpdateStage.IDLE) {
             updateRelease = availableUpdate
             updateStage = UpdateStage.AVAILABLE
         }
@@ -2562,9 +2566,11 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         val installedVer = version()
         container.addView(label(getString(R.string.update_installed_version, installedVer), 15, TEXT))
 
-        val latestVer = activeRelease?.tagName
-            ?: if (updateStage == UpdateStage.IDLE && updateMessage == getString(R.string.update_up_to_date)) installedVer
-            else null
+        val latestVer = when {
+            activeRelease != null -> activeRelease.tagName
+            updateStage == UpdateStage.IDLE && updateMessage == getString(R.string.update_up_to_date) -> installedVer
+            else -> null
+        }
         if (latestVer != null) {
             container.addView(label(getString(R.string.update_latest_version, latestVer), 15, TEXT).apply {
                 setPadding(0, dp(4), 0, 0)
@@ -2575,9 +2581,31 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             val notes = activeRelease.releaseNotes.trim()
             container.addView(space(10))
             container.addView(label(getString(R.string.update_release_notes), 14, TEXT, true))
-            container.addView(label(if (notes.isNotEmpty()) notes else getString(R.string.update_no_release_notes), 14, MUTED).apply {
-                setPadding(0, dp(4), 0, 0)
-            })
+            if (notes.isEmpty()) {
+                container.addView(label(getString(R.string.update_no_release_notes), 14, MUTED).apply {
+                    setPadding(0, dp(4), 0, 0)
+                })
+            } else {
+                val lines = notes.split('\n')
+                val isLong = lines.size > 5 || notes.length > 200
+                val notesLabel = label(notes, 14, MUTED).apply {
+                    setPadding(0, dp(4), 0, 0)
+                    if (isLong && !releaseNotesExpanded) {
+                        maxLines = 5
+                        ellipsize = android.text.TextUtils.TruncateAt.END
+                    }
+                }
+                container.addView(notesLabel)
+                if (isLong) {
+                    container.addView(button(
+                        getString(if (releaseNotesExpanded) R.string.update_release_notes_less else R.string.update_release_notes_more),
+                        false,
+                    ) {
+                        releaseNotesExpanded = !releaseNotesExpanded
+                        render()
+                    }, matchButton(6, 48))
+                }
+            }
         }
 
         updateMessage?.let {
@@ -2633,14 +2661,17 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 outcome.fold(
                     { release ->
                         UpdateAvailability.recordAttempt(this, System.currentTimeMillis())
-                        availableUpdate = release
                         if (release == null) {
                             UpdateAvailability.clear(this)
+                            availableUpdate = null
+                            updateRelease = null
                             updateMessage = getString(R.string.update_up_to_date)
                             updateStage = UpdateStage.IDLE
                         } else {
                             UpdateAvailability.save(this, release)
+                            availableUpdate = release
                             updateRelease = release
+                            updateMessage = null
                             updateStage = UpdateStage.AVAILABLE
                         }
                         render()
@@ -2688,8 +2719,9 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             // Each attempt owns its files, including across activity recreation.
             val directory = File(cacheDir, "update/${java.util.UUID.randomUUID()}")
             val outcome = runCatching {
-                // The cached release can be a day old. Download the newest one, falling back to cached release.
-                release = runCatching { latestRelease() }.getOrNull() ?: updateRelease ?: throw IOException(getString(R.string.update_up_to_date))
+                // Check for the latest release; if lookup succeeds and returns null, no update is available.
+                val remote = latestRelease()
+                release = remote ?: throw IOException(getString(R.string.update_up_to_date))
                 val checksumsFile = File(directory, UpdateCatalog.CHECKSUMS_FILE)
                 UpdateClient.download(release.checksumsUrl, checksumsFile) { _, _ -> }
                 val apkFile = File(directory, release.apkName)
@@ -2726,8 +2758,16 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     },
                     { failure ->
                         Log.w("DiPlay-Update", "update download failed", failure)
-                        updateMessage = formatUpdateError(failure)
-                        updateStage = UpdateStage.FAILED
+                        if (failure.message == getString(R.string.update_up_to_date)) {
+                            UpdateAvailability.clear(this)
+                            availableUpdate = null
+                            updateRelease = null
+                            updateMessage = getString(R.string.update_up_to_date)
+                            updateStage = UpdateStage.IDLE
+                        } else {
+                            updateMessage = formatUpdateError(failure)
+                            updateStage = UpdateStage.FAILED
+                        }
                         render()
                     },
                 )

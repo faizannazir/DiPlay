@@ -710,6 +710,8 @@
     <string name="update_latest_version">Остання доступна версія: %1$s</string>
     <string name="update_release_notes">Примітки до випуску:</string>
     <string name="update_no_release_notes">Примітки до випуску відсутні.</string>
+    <string name="update_release_notes_more">Показати всі примітки</string>
+    <string name="update_release_notes_less">Згорнути</string>
     <string name="update_no_internet">Немає підключення до інтернету. Перевірте мережу та спробуйте ще раз.</string>
     <string name="backup_title">Резервна копія налаштувань</string>
     <string name="backup_open">Резервна копія на телефоні</string>
