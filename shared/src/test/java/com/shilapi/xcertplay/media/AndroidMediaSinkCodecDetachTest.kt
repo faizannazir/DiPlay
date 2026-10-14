@@ -121,7 +121,7 @@ class AndroidMediaSinkCodecDetachTest {
         assertSame(parking.listenerLooper, readerListenerLooper(parking))
         assertSame("the codec now renders to the consumer", parking.surface, decoder.field<Surface?>("outputSurface"))
         assertSame("parking keeps the codec and its state", codecBefore, mediaCodecOf(decoder))
-        assertEquals(listOf<Surface?>(a), codec.configuredSurfaces.distinct())
+        assertEquals(listOf<Surface?>(a), codec.configuredSurfaces.toList())
     }
 
     @Test fun theParkingConsumerDrainsWhileTheMainThreadIsBlocked() {
@@ -177,7 +177,7 @@ class AndroidMediaSinkCodecDetachTest {
         assertTrue(barrier(sink))
         assertSame(b, decoder.field<Surface?>("outputSurface"))
         assertSame("moving back keeps the codec", codecBefore, mediaCodecOf(decoder))
-        assertEquals(listOf<Surface?>(a), codec.configuredSurfaces.distinct())
+        assertEquals(listOf<Surface?>(a), codec.configuredSurfaces.toList())
 
         // A detaches again (late) but the codec renders to B now.
         val stale = sink.beginSurfaceDetach(a, parkMain = true)
@@ -242,12 +242,12 @@ class AndroidMediaSinkCodecDetachTest {
         assertTrue(barrier(sink))
         assertNull(fresh.field<Surface?>("outputSurface"))
         assertNotNull("it picked up the stream's configuration", fresh.field<Any?>("lastConfig"))
-        assertEquals("no codec was started on A again", listOf<Surface?>(a), codec.configuredSurfaces.distinct())
+        assertEquals("no codec was started on A again", listOf<Surface?>(a), codec.configuredSurfaces.toList())
 
         sink.setSurface(110, c)
         sink.onVideoFrame(110, idr)
         assertTrue(barrier(sink))
-        assertEquals(listOf<Surface?>(a, c), codec.configuredSurfaces.distinct())
+        assertEquals(listOf<Surface?>(a, c), codec.configuredSurfaces.toList())
         assertTrue(uncaught.toString(), uncaught.isEmpty())
     }
 
@@ -392,7 +392,7 @@ class AndroidMediaSinkCodecDetachTest {
         sink.whenVideoReleased { calls.incrementAndGet() } // registration after release is immediate
         assertEquals("each successful observer runs exactly once", 10, calls.get())
         assertTrue(decoders(sink).isEmpty())
-        assertEquals(listOf<Surface?>(a), codec.configuredSurfaces.distinct())
+        assertEquals(listOf<Surface?>(a), codec.configuredSurfaces.toList())
     }
 
     @Test fun aStaleRetirementCannotRepublishAWorkerThatAlreadyReleasedItsCodec() {
@@ -442,7 +442,7 @@ class AndroidMediaSinkCodecDetachTest {
         sink.onVideoConfig(110, avcC)
         sink.onVideoFrame(110, idr, 1L, System.nanoTime())
         assertTrue(barrier(sink))
-        assertEquals(listOf<Surface?>(surface), codec.configuredSurfaces.distinct())
+        assertEquals(listOf<Surface?>(surface), codec.configuredSurfaces.toList())
         assertNotNull(mediaCodecOf(mainDecoder(sink)))
         return sink
     }
