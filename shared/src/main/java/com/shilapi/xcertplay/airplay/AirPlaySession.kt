@@ -1025,15 +1025,6 @@ internal object ScopedAddressCompat {
                 Inet6Address.getByAddress(null, remote.address, localScopeId)
             }.getOrDefault(remote)
         }
-        val tunIndex = runCatching {
-            java.net.NetworkInterface.getNetworkInterfaces()?.let { java.util.Collections.list(it) }
-                ?.firstOrNull { it.name.startsWith("tun") && it.index > 0 }?.index ?: 0
-        }.getOrDefault(0)
-        if (tunIndex != 0) {
-            return runCatching {
-                Inet6Address.getByAddress(null, remote.address, tunIndex)
-            }.getOrDefault(remote)
-        }
         return remote
     }
 }

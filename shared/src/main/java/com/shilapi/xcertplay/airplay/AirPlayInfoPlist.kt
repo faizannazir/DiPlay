@@ -53,7 +53,7 @@ object AirPlayInfoPlist {
             info["audioFormats"] = audioFormats(config.entertainmentSampleRate, config.microphone, config.mainBufferedAudio, config.microphoneOpus,
                 config.speechWithout8And16Khz)
         }
-        info["extendedFeatures"] = listOf("vocoderInfo", "enhancedRequestCarUI")
+        info["extendedFeatures"] = listOf("enhancedRequestCarUI")
         info["displays"] = displays
         info["hidDevices"] = listOf(
             AirPlayHid.touchHidDevice(config.main.widthPixels, config.main.heightPixels, MAIN_UUID),
