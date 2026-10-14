@@ -2687,9 +2687,10 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }, "diplay-update-check").start()
     }
 
-    private fun latestRelease(): UpdateRelease? {
-        return UpdateReleaseLookup.latest(version(), userAgent())
-    }
+    /** Supplier for fetching remote release; tests can inject or mock. */
+    internal var latestReleaseSupplier: () -> UpdateRelease? = { UpdateReleaseLookup.latest(version(), userAgent()) }
+
+    private fun latestRelease(): UpdateRelease? = latestReleaseSupplier()
 
     private fun openAvailableUpdate(release: UpdateRelease) {
         updateRelease = release

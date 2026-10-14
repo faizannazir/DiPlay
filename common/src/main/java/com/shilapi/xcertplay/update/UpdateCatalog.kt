@@ -20,7 +20,7 @@ internal object UpdateCatalog {
         for (index in 0 until releases.length()) {
             val release = releases.optJSONObject(index) ?: continue
             if (release.optBoolean("draft")) continue
-            val assets = release.optJSONArray("assets") ?: return null
+            val assets = release.optJSONArray("assets") ?: continue
             var apkName = ""
             var apkUrl = ""
             var checksumsUrl = ""
@@ -28,15 +28,17 @@ internal object UpdateCatalog {
                 val asset = assets.optJSONObject(assetIndex) ?: continue
                 val name = asset.optString("name")
                 val url = asset.optString("browser_download_url")
-                if (name.endsWith(".apk")) {
+                if (name.endsWith(".apk") && url.isNotBlank()) {
                     apkName = name
                     apkUrl = url
                 }
-                if (name.equals(CHECKSUMS_FILE, ignoreCase = true)) checksumsUrl = url
+                if (name.equals(CHECKSUMS_FILE, ignoreCase = true) && url.isNotBlank()) checksumsUrl = url
             }
-            if (apkUrl.isEmpty() || checksumsUrl.isEmpty()) return null
+            if (apkUrl.isEmpty() || checksumsUrl.isEmpty()) continue
+            val tagName = release.optString("tag_name")
+            if (tagName.isBlank()) continue
             val releaseNotes = release.optString("body")
-            return UpdateRelease(release.optString("tag_name"), apkName, apkUrl, checksumsUrl, releaseNotes)
+            return UpdateRelease(tagName, apkName, apkUrl, checksumsUrl, releaseNotes)
         }
         return null
     }
