@@ -24,6 +24,7 @@ class UpdateCatalogTest {
             "tag_name": "v0.2.14",
             "draft": false,
             "prerelease": true,
+            "body": "Fixed audio latency issue.",
             "assets": [
               {"name": "DiPlay-0.2.14.apk", "browser_download_url": "https://github.com/shihabal3amri/DiPlay/releases/download/v0.2.14/DiPlay-0.2.14.apk"},
               {"name": "SHA256SUMS.txt", "browser_download_url": "https://github.com/shihabal3amri/DiPlay/releases/download/v0.2.14/SHA256SUMS.txt"}
@@ -45,6 +46,7 @@ class UpdateCatalogTest {
             "https://github.com/shihabal3amri/DiPlay/releases/download/v0.2.14/SHA256SUMS.txt",
             release?.checksumsUrl,
         )
+        assertEquals("Fixed audio latency issue.", release?.releaseNotes)
     }
 
     @Test

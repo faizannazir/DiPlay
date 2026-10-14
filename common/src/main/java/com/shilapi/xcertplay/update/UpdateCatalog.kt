@@ -8,6 +8,7 @@ internal data class UpdateRelease(
     val apkName: String,
     val apkUrl: String,
     val checksumsUrl: String,
+    val releaseNotes: String = "",
 )
 
 internal object UpdateCatalog {
@@ -34,7 +35,8 @@ internal object UpdateCatalog {
                 if (name.equals(CHECKSUMS_FILE, ignoreCase = true)) checksumsUrl = url
             }
             if (apkUrl.isEmpty() || checksumsUrl.isEmpty()) return null
-            return UpdateRelease(release.optString("tag_name"), apkName, apkUrl, checksumsUrl)
+            val releaseNotes = release.optString("body")
+            return UpdateRelease(release.optString("tag_name"), apkName, apkUrl, checksumsUrl, releaseNotes)
         }
         return null
     }
