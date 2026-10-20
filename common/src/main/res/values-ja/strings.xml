@@ -966,4 +966,9 @@
     <string name="settings_write_settings_allow">アクセスを許可</string>
     <string name="settings_wifi_direct_scan_pause">CarPlay中は車のWi-Fi検索を一時停止 · ADBが必要</string>
     <string name="settings_wifi_direct_scan_pause_description">Wi-Fi Directでは車が数秒ごとにWi-Fiネットワークを検索し、そのたびに音楽と映像が途切れます。オンにすると、CarPlayの実行中はDiPlayがこの検索を止めます。その間、車はスマートフォンのテザリングなど既知のネットワークにも自動では接続しません（車のWi-Fi設定から手動では接続できます）。自動で接続させたい場合はオフにしてください。次の接続から適用されます。</string>
+    <string name="settings_choose_connection_method">接続方法を選択</string>
+    <string name="settings_guided_setup">ガイド付きセットアップ</string>
+    <string name="settings_connection_status_heading">接続ステータス</string>
+    <string name="settings_usb_connection_method">USB ケーブル</string>
+    <string name="settings_usb_connection_method_desc">USB データ ケーブルを使用したシンプルで安定した有線接続。</string>
 </resources>

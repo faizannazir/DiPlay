@@ -30,6 +30,18 @@ Connecting the CH341 bridge does not change wireless CarPlay to wired mode.
 Switching back to Local validates the identity before saving; failure keeps
 the menu open and preserves the previously saved authentication choice.
 
+CONNECTION SETUP METHOD SELECTION & GUIDED FLOW — DIPLAY
+DiPlay provides a clean 4-method connection setup flow:
+
+1. Choose Connection Method: Select from Built-in Car Hotspot (recommended),
+   Wi-Fi Direct, Existing Wi-Fi / Same LAN, or USB Cable.
+2. Guided Setup: Only the steps and controls relevant to the chosen method
+   are shown in clear, numbered steps.
+3. Credentials & Status: Hotspot credentials and passwords are never exposed
+   unnecessarily on summary cards. Validation error messages appear in edit dialogs.
+4. Connection Status & Action: Displays active connection state (Ready, Connecting,
+   Connected, Setup needs attention) and primary actions without duplicate attempt risk.
+
 BUILT-IN HOTSPOT SETUP — BOTH APPS
 1. In the car's settings, turn on its built-in Wi-Fi hotspot. Select 5 GHz
    if available. Note the hotspot name and password exactly.

@@ -32,7 +32,14 @@ android {
         // Geely/Lynk head-unit input API (com.geely.inputservice); declarations in src/main/aidl.
         aidl true
     }
-    compileOptions {
+
+    testOptions {
+        unitTests.all {
+            systemProperty 'robolectric.dependency.repo.id', 'aliyun'
+            systemProperty 'robolectric.dependency.repo.url', 'https://maven.aliyun.com/repository/public'
+        }
+    }
+compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
