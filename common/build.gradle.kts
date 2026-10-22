@@ -24,19 +24,16 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
-<<<<<<< HEAD
         // The UI suite covers several SDKs and locale-specific resource sandboxes. 1g sat right at the
         // ceiling: adding one more Robolectric class pushed a full run into OutOfMemoryError in
         // unrelated tests, on CI and locally both, which is what BydSettingsDecoyTest measured.
         unitTests.all { it.maxHeapSize = "2g" }
-=======
         // The UI suite covers several SDKs and locale-specific resource sandboxes.
         unitTests.all {
             it.maxHeapSize = "1g"
             it.systemProperty("robolectric.dependency.repo.id", "aliyun")
             it.systemProperty("robolectric.dependency.repo.url", "https://maven.aliyun.com/repository/public")
         }
->>>>>>> 0c28835 (Redesign Connection Setup UX into clear 4-method selection and guided flow)
     }
 }
 
